@@ -1,0 +1,14 @@
+[
+  {
+    "question": "REPLACE_WITH_A_REAL_QUESTION_ABOUT_YOUR_PDF",
+    "expected_keyword": "REPLACE_WITH_A_WORD_THAT_SHOULD_APPEAR_IN_A_CORRECT_ANSWER"
+  },
+  {
+    "question": "What is this document about?",
+    "expected_keyword": "REPLACE_ME"
+  },
+  {
+    "question": "ASK_SOMETHING_NOT_IN_THE_PDF_TO_TEST_THE_WEB_FALLBACK",
+    "expected_keyword": "REPLACE_ME"
+  }
+]
