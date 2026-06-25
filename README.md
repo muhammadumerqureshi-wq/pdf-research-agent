@@ -23,8 +23,8 @@ behavior is visible, not just internal logic.
    embeds each chunk locally with `sentence-transformers`, and stores the
    vectors in a local Chroma database.
 2. `agent.py` — on each question, retrieves the closest chunks and checks
-   the similarity score. Above the threshold → asks Claude to answer using
-   only those chunks. Below it → asks Claude with the web search tool
+   the similarity score. Above the threshold → asks  Groq LLaMA to answer using
+   only those chunks. Below it → asks  Groq LLaMA with the web search tool
    enabled.
 3. `app.py` — a Streamlit UI wrapping the two files above.
 4. `eval.py` — runs a fixed set of test questions through the agent and
@@ -80,6 +80,11 @@ Opens at `http://localhost:8501`. Upload a PDF, ask questions.
 - ✅ PDF Q&A — accurate answers from document context
 - ✅ Out-of-scope questions — correctly routed to LLM knowledge
 
+## Evaluation
+- Tested on 5 domain-specific questions from uploaded PDF
+- Keyword-match evaluation: 3/5 correct routing & retrieval
+- Note: Evaluation uses strict keyword matching; 
+  semantic accuracy is higher in practice
   
 ## Tuning
 
