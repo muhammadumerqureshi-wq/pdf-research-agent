@@ -35,7 +35,7 @@ behavior is visible, not just internal logic.
 
 ```bash
 pip install -r requirements.txt
-export GEMINI_API_KEY=your_key_here   # free key, no credit card: aistudio.google.com/apikey
+GROQ_KEY=gsk_xxxxxxxxxxxxxxxx           # free key, no credit card
 ```
 
 The first run downloads the embedding model (~90MB, one-time, needs
