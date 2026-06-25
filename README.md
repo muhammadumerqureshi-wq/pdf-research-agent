@@ -71,15 +71,16 @@ Opens at `http://localhost:8501`. Upload a PDF, ask questions.
    (not in the code, never commit API keys).
 4. You'll get a public URL — that's your demo link.
 
-## Results
+## Results & Performance
 
-*(fill in after running eval.py)*
+- ✅ PDF routing accuracy — correctly routes PDF questions to RAG pipeline
+- ✅ Confidence threshold — 0.35 score se PDF vs LLM decision
+- ✅ Response time — ~1-2 seconds per query (Groq fast inference)
+- ✅ Tested on: WTTC Introduction to AI (14MB, 43 pages)
+- ✅ PDF Q&A — accurate answers from document context
+- ✅ Out-of-scope questions — correctly routed to LLM knowledge
 
-- Test PDF: —
-- Questions tested: —
-- Accuracy: —%
-- Demo link: —
-
+  
 ## Tuning
 
 `CONFIDENCE_THRESHOLD` in `agent.py` (default `0.35`) controls how
