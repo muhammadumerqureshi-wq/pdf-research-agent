@@ -1,7 +1,6 @@
-google-genai
+GROQ API
 streamlit
 chromadb
 sentence-transformers
 pypdf
-sentence transformer
 BM25
