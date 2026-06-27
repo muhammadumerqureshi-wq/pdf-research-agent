@@ -3,4 +3,5 @@ streamlit
 chromadb
 sentence-transformers
 pypdf
- 
+sentence transformer
+BM25
