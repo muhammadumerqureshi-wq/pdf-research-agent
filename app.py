@@ -1,11 +1,6 @@
 """
-app.py
-
-The Streamlit UI. This is what turns your code into something a
-recruiter can actually click and use, instead of just reading.
-
-Run it with:
-  streamlit run app.py
+app.py — Streamlit UI for Hybrid RAG Agent
+Updated to pass bm25 + chunks to answer_question for hybrid retrieval.
 """
 
 import os
@@ -20,7 +15,9 @@ st.caption("Ask questions about your PDF. If the PDF doesn't have the answer, it
 
 if "collection" not in st.session_state:
     st.session_state.collection = None
-    st.session_state.filename = None
+    st.session_state.bm25       = None
+    st.session_state.chunks     = None
+    st.session_state.filename   = None
 
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
@@ -30,21 +27,28 @@ if uploaded_file and uploaded_file.name != st.session_state.filename:
             tmp.write(uploaded_file.read())
             tmp_path = tmp.name
 
-        # 🧠 Fixed Indentation and explicit script reference pointers
-        text = rag_engine.load_pdf_text(tmp_path)
+        text   = rag_engine.load_pdf_text(tmp_path)
         chunks = rag_engine.chunk_text(text)
+
+        # Build both indexes
         st.session_state.collection = rag_engine.build_vector_store(chunks)
-        st.session_state.filename = uploaded_file.name
+        st.session_state.bm25       = rag_engine.build_bm25_index(chunks)
+        st.session_state.chunks     = chunks
+        st.session_state.filename   = uploaded_file.name
         os.unlink(tmp_path)
 
-    st.success(f"Indexed {len(chunks)} chunks from {uploaded_file.name}")
+    st.success(f"✅ Indexed {len(chunks)} chunks from **{uploaded_file.name}** (Semantic + BM25 ready)")
 
 if st.session_state.collection:
     question = st.text_input("Ask a question")
     if question:
         with st.spinner("Thinking..."):
-            # 🧠 Fixed Agent call explicit logic
-            answer, mode = agent.answer_question(question, st.session_state.collection)
+            answer, mode = agent.answer_question(
+                question,
+                st.session_state.collection,
+                st.session_state.bm25,
+                st.session_state.chunks,
+            )
 
         badge = "📄 Answered from your PDF" if mode == "pdf" else "🌐 Answered from a live web search"
         st.caption(badge)

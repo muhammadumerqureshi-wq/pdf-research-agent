@@ -1,60 +1,54 @@
 import os
 from groq import Groq
-from dotenv import load_dotenv
-import rag_engine
+from rag_engine import hybrid_search
 
+CONFIDENCE_THRESHOLD = 0.60  # fused hybrid score threshold
+from dotenv import load_dotenv
 load_dotenv()
 
-# ── Config ─────────────────────────────────────────────────────────────────────
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-MODEL = "llama-3.3-70b-versatile"
-CONFIDENCE_THRESHOLD = 0.35
+def answer_question(question, collection, bm25, chunks):
+    """
+    Updated to use hybrid_search (BM25 + Semantic) instead of pure semantic search.
+    bm25   → BM25 index built from chunks (pass from app.py/eval.py)
+    chunks → original chunk list (needed for BM25 scoring)
+    """
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-client = Groq(api_key=GROQ_API_KEY)
-
-def call_groq(prompt: str) -> str:
-    """Send a prompt to Groq and return the response text."""
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=500,
-        temperature=0.7,
+    # ── Hybrid Retrieval (BM25 + ChromaDB fused) ────────────────────────────
+    top_chunks, best_score = hybrid_search(
+        query=question,
+        collection=collection,
+        bm25=bm25,
+        chunks=chunks,
+        n_results=3,
+        alpha=0.7,          # 70% semantic + 30% BM25 — reduces false BM25 keyword matches
     )
-    return response.choices[0].message.content
 
+    print(f"[agent] Best hybrid score: {best_score:.4f} | Threshold: {CONFIDENCE_THRESHOLD}")
 
-def answer_from_pdf(question: str, chunks_with_scores) -> str:
-    """Answer using context retrieved from the uploaded PDF."""
-    context = "\n\n---\n\n".join(chunk for chunk, _ in chunks_with_scores)
-    prompt = f"""Answer the question using ONLY the context below.
-If the context genuinely doesn't contain the answer, say so plainly instead of guessing.
-
-Context:
-{context}
-
-Question: {question}"""
-    return call_groq(prompt)
-
-
-def answer_from_web(question: str) -> str:
-    """Answer using the LLM's own knowledge (no PDF context)."""
-    prompt = f"""You are a helpful assistant. Answer the following question clearly and concisely 
-using your knowledge. If you are unsure, say so.
-
-Question: {question}"""
-    return call_groq(prompt)
-
-
-def answer_question(question: str, collection, k: int = 4):
-    """
-    Route the question:
-    - If PDF has relevant content (score >= threshold) → answer from PDF
-    - Otherwise → answer from LLM knowledge
-    """
-    results = rag_engine.retrieve(question, collection, k=k)
-    best_score = results[0][1] if results else 0
-
+    # ── Route based on fused score ───────────────────────────────────────────
     if best_score >= CONFIDENCE_THRESHOLD:
-        return answer_from_pdf(question, results), "pdf"
+        mode = "pdf"
+        context = "\n\n---\n\n".join(top_chunks)
+        prompt = (
+            f"Answer the question using ONLY the context below. "
+            f"Do not use outside knowledge.\n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {question}"
+        )
     else:
-        return answer_from_web(question), "web"
+        mode = "web"
+        prompt = (
+            f"Answer the following question using your general knowledge:\n\n"
+            f"Question: {question}"
+        )
+
+    print(f"[agent] Routing to mode: {mode.upper()}")
+
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    answer = response.choices[0].message.content
+    return answer, mode
